@@ -1,6 +1,6 @@
 # File:    shift_share_proj.r
 # Author:  Joe Yuke
-# Purpose: shift share analysis, SB County#
+# Purpose: shift share analysis
 # Outputs: Shift_share.xlsx, Local_graph_ind.jpg, US_bar.jpg, State_bar.jpg, Local_bar.jpg
 
 
@@ -49,7 +49,9 @@ library(ggplot2)
 library(scales)
 
 # directories
-outputloc <- "C:/Users/Joe Yuke/OneDrive - BAY AREA TECHNOLOGY MANAGEMENT INC/Documents/EFP/Shift_share_proj/Output"
+pwd <- "C:/Users/Joe Yuke/OneDrive - BAY AREA TECHNOLOGY MANAGEMENT INC/Documents/EFP/Shift_share_proj/Contra_Costa"
+setwd(pwd)
+outputloc <- paste(pwd,"/Output",sep="")
 
 # color template
 EFPcolors <- c("deepskyblue4","brown3","darkolivegreen4", "cornflowerblue",
@@ -66,6 +68,7 @@ EFPcolors <- c("deepskyblue4","brown3","darkolivegreen4", "cornflowerblue",
 # manually set parameters
 base_yr <- 2018
 yr      <- 2019
+County  <- "Contra Costa"
 
 
 # industries of interest: NAICS code
@@ -98,9 +101,9 @@ shiftshare <- function(li1,li2,ri1,ri2,r1,r2){
 # Note: Private Sector Jobs
 
 # Totals for national/state:
-US_data <- read.xlsx("US_tot.xlsx", sheetIndex=1, startRow=13)
+US_data <- read.xlsx("National/US_tot.xlsx", sheetIndex=1, startRow=13)
 US_data <- select(US_data, Year, Annual) %>% subset(Year == base_yr | Year == yr)
-CA_data <- read.xlsx("CA_tot.xlsx", sheetIndex=1, startRow=13)
+CA_data <- read.xlsx("State/CA_tot.xlsx", sheetIndex=1, startRow=13)
 CA_data <- select(CA_data, Year, Annual) %>% subset(Year == base_yr | Year == yr)
 
 # Picking out data points
@@ -110,7 +113,7 @@ CA_b <- CA_data[1,2]
 CA   <- CA_data[2,2]
 
 
-# SB/US matrix
+# county/US matrix
 US_Shift_share <- matrix(data = 0,num_i,4)
 colnames(US_Shift_share)[1:4] <- c("Industry(NAICS)","National_Share",
                                    "Industry_Mix","Regional_Share")
@@ -118,7 +121,7 @@ US_Shift_share[,1] <- code_list
 rownames(US_Shift_share)[1:num_i] <- ind_names
 
 
-# SB/CA matrix
+# county/CA matrix
 CA_Shift_share <- matrix(data = 0,num_i,4)
 colnames(CA_Shift_share)[1:4] <- c("Industry(NAICS)","CA_Share",
                                    "Industry_Mix","Regional_Share")
@@ -143,8 +146,11 @@ for (i in 1:num_i) {
   CA_i_data <- read.xlsx(sprintf("State/CA_%s.xlsx",code_list[i]), sheetIndex = 1, startRow = 13)
   CA_i_data <- select(CA_i_data, Year, Annual) %>%
     subset(Year == base_yr | Year == yr)
-  SB_i_data <- read.xlsx(sprintf("Local/SB_%s.xlsx",code_list[i]), sheetIndex = 1, startRow = 13)
-  SB_i_data <- select(SB_i_data, Year, Annual) %>%
+  loc_i_data <- read.xlsx(sprintf("Local/loc_%s.xlsx",code_list[i]), sheetIndex = 1, startRow = 13)
+  if ("" %in% loc_i_data$Annual) {
+    loc_i_data$Annual <- as.integer(as.character(loc_i_data$Annual))
+  }
+  loc_i_data <- select(loc_i_data, Year, Annual) %>%
     subset(Year == base_yr | Year == yr)
   
   #Picking out data points:
@@ -152,8 +158,8 @@ for (i in 1:num_i) {
   US_i      <- US_i_data[2,2]
   CA_i_b    <- CA_i_data[1,2]
   CA_i      <- CA_i_data[2,2]
-  local_i_b <- SB_i_data[1,2]
-  local_i   <- SB_i_data[2,2]
+  local_i_b <- loc_i_data[1,2]
+  local_i   <- loc_i_data[2,2]
   
   #using shift-share function:
   US_Shift_share[i,2:4] <- shiftshare(local_i_b,local_i,US_i_b,US_i,US_b,US)
@@ -182,7 +188,7 @@ write.xlsx(e_change, file="Shift_share.xlsx", sheetName="Change", append=T)
 #              #
 #--------------#
 
-Years       <- c((yr-10):yr)
+Years       <- c((yr-9):yr)
 
 # number of industries to graph
 num_j       <- 3
@@ -205,22 +211,25 @@ ind_names   <- rep(0,num_j)
 
 ind_size <- as.data.frame(e_change) %>% select(`Industry(NAICS)`,`t:county`)
 ind_size$`t:county` <- as.integer(as.character(ind_size$`t:county`))
+ind_size[is.na(ind_size)] <- 0
 ind_size1 <- ind_size
 
 for (j in 1:num_j) {
   
   index <- which.max(ind_size1$`t:county`)
-  graph_codes[j] <- as.character(ind_size1$`Industry(NAICS)`[index])
+  graph_codes[j] <- ind_size1$`Industry(NAICS)`[index]
   
   ind_size1 <- ind_size1[-index,]
   
 }
 
-graph_codes <- as.character(sort(as.integer(graph_codes)))
+graph_codes <- sort(as.integer(graph_codes))
 
 for (j in 1:num_j) {
   
-  index <- which(ind_size$`Industry(NAICS)` == graph_codes[j])
+  index <- as.integer(graph_codes[j])
+  
+  graph_codes[j] <- as.character(ind_size$`Industry(NAICS)`[as.integer(graph_codes[j])])
   
   ind_names[j]   <- row.names(ind_size)[index]
   
@@ -238,28 +247,28 @@ for (j in 1:num_j) {
   
   US <- read.xlsx(sprintf("National/US_%s.xlsx",graph_codes[j]), sheetIndex = 1, startRow = 13) %>%
     select(Year, Annual)
-  graph_data[,(3*j-1)] <- US$Annual
+  graph_data[,(3*j-1)] <- US$Annual[1:10]
   
   State <- read.xlsx(sprintf("State/CA_%s.xlsx",graph_codes[j]), sheetIndex = 1, startRow = 13) %>%
     select(Year, Annual)
-  graph_data[,(3*j)] <- State$Annual
+  graph_data[,(3*j)] <- State$Annual[1:10]
   
-  Local <- read.xlsx(sprintf("Local/SB_%s.xlsx",graph_codes[j]), sheetIndex = 1, startRow = 13) %>%
+  Local <- read.xlsx(sprintf("Local/loc_%s.xlsx",graph_codes[j]), sheetIndex = 1, startRow = 13) %>%
     select(Year, Annual)
-  graph_data[,(3*j+1)] <- Local$Annual
+  graph_data[,(3*j+1)] <- Local$Annual[1:10]
   
 }
 
-US <- as.data.frame(read.xlsx("US_tot.xlsx", sheetIndex = 1, startRow = 13))
-graph_data$US_tot <- US$Annual
-State <- as.data.frame(read.xlsx("CA_tot.xlsx", sheetIndex = 1, startRow = 13))
-graph_data$State_tot <- State$Annual
-Local <- as.data.frame(read.xlsx("SB_tot.xlsx", sheetIndex = 1, startRow = 13))
-graph_data$Local_tot <- Local$Annual
+US <- as.data.frame(read.xlsx("National/US_tot.xlsx", sheetIndex = 1, startRow = 13))
+graph_data$US_tot <- US$Annual[1:10]
+State <- as.data.frame(read.xlsx("State/CA_tot.xlsx", sheetIndex = 1, startRow = 13))
+graph_data$State_tot <- State$Annual[1:10]
+Local <- as.data.frame(read.xlsx("Local/loc_tot.xlsx", sheetIndex = 1, startRow = 13))
+graph_data$Local_tot <- Local$Annual[1:10]
 
 
 # bar chart manipulation:
-graph_data_bar <- gather(graph_data[7:11,], type, employment, -Year)
+graph_data_bar <- gather(tail(graph_data,5), type, employment, -Year)
 graph_data_bar <- separate(graph_data_bar, type, c("location","industry"), sep = "_")
 
 
@@ -289,7 +298,7 @@ Local_graph_ind <- ggplot(graph_data) +
   scale_x_date(labels = date_format("%Y"),
                breaks = seq.Date(from = min(graph_data$Year), to = max(graph_data$Year), by = "2 years")) +
   scale_y_continuous(labels = scales::comma_format()) +
-  ggtitle("Santa Barbara County Employment","Private Sector") +
+  ggtitle(sprintf("%s County Employment",County),"Private Sector") +
   labs(caption = "Source: Quarterly Census of Employment and Wages (QCEW)") +
   ylab("Annual Employment") +
   scale_color_manual(labels = c('first'  =  ind_names[1],
@@ -341,13 +350,15 @@ Local_bar <- ggplot() +
   geom_col(data = subset(graph_data_bar, location == "Local" & industry != "tot"),
            aes(x = Year, y = employment, fill = industry), width=300) +
   scale_y_continuous(labels = scales::comma_format()) +
-  ggtitle("Santa Barbara County Private Employment","Industry Portion of Total Employment") +
+  ggtitle(sprintf("%s County Private Employment",County),"Industry Portion of Total Employment") +
   labs(caption = "Source: Quarterly Census of Employment and Wages (QCEW)") +
   ylab("Annual Employment") +
   scale_fill_manual(labels = c(ind_names[1], ind_names[2], ind_names[3], 'Total \nEmployment'),
                     values = c(EFPcolors[3], EFPcolors[1], EFPcolors[2], EFPcolors[4])) +
   efp_theme
 
+
+# Saving:
 ggsave("Local_graph_ind.jpg", Local_graph_ind, height = 4, width = 6, path = outputloc)
 ggsave("US_bar.jpg", US_bar, height = 4, width = 6, path = outputloc)
 ggsave("State_bar.jpg", State_bar, height = 4, width = 6, path = outputloc)
