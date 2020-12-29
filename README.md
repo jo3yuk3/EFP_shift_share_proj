@@ -7,7 +7,7 @@ Note: Private Sector Jobs
 
 1) Create 4 folders: "Local", "State", "National", "Output"
 
-2) Download employment data: https://www.bls.gov/data/   (Takes the longest time)
+2) Download employment data: https://www.bls.gov/data/   (Takes the longest time) //
 	Quarterly Census of Employment & Wages - QCEW: State and County Employment and Wages
 	one screen data search
 Download national and statewide employment numbers:
