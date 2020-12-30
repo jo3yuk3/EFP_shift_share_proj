@@ -48,14 +48,17 @@ library(tidyverse)
 library(ggplot2)
 library(scales)
 
-# directories
-pwd <- "C:/Users/Joe Yuke/OneDrive - BAY AREA TECHNOLOGY MANAGEMENT INC/Documents/EFP/Shift_share_proj/Contra_Costa"
+# directories, manually set
+user           <- "C:/Users/Joe Yuke/OneDrive - BAY AREA TECHNOLOGY MANAGEMENT INC/Documents/EFP/Shift_share_proj/"
+county_folder  <- "SBC"
+
+pwd            <- paste0(user,county_folder)
 setwd(pwd)
-outputloc <- paste(pwd,"/Output",sep="")
+outputloc   <- paste0(pwd,"/Output")
 
 # color template
-EFPcolors <- c("deepskyblue4","brown3","darkolivegreen4", "cornflowerblue",
-               "darkorange3","brown4","mediumpurple4","red", "darkslateblue")
+EFPcolors   <- c("deepskyblue4","brown3","darkolivegreen4", "cornflowerblue",
+                 "darkorange3","brown4","mediumpurple4","red", "darkslateblue")
 
 
 
@@ -68,18 +71,18 @@ EFPcolors <- c("deepskyblue4","brown3","darkolivegreen4", "cornflowerblue",
 # manually set parameters
 base_yr <- 2018
 yr      <- 2019
-County  <- "Contra Costa"
+County  <- "Santa Barbara"
 
 
 # industries of interest: NAICS code
-code_list <- c("11", "23", "31-33", "42", "44-45", "48-49", "51", "52", "53", "54", "55",
-               "56", "62", "71", "72")
+code_list <- c("11", "23", "31-33", "42", "44-45", "48-49", "51", "52", "53",
+               "54", "55", "56", "62", "71", "72")
 ind_names <- c("Agriculture", "Construction", "Manufacturing", "Wholesale Trade",
                "Retail Trade", "Transportation & Warehousing", "Information",
                "Finance & Insurance", "Real Estate", "Prof. & Technical Services",
                "Management", "Admin & Waste Services", "Health Care & \nSocial Assistance",
                "Arts, Entertainment, & Recreation", "Accommodation & \nFood Services")
-num_i <- length(code_list)
+num_i     <- length(code_list)
 
 
 # shift share function:
@@ -176,9 +179,9 @@ for (i in 1:num_i) {
 
 
 # Save Output as an excel file:
-write.xlsx(US_Shift_share, file="Shift_share.xlsx", sheetName="US", append=F)
-write.xlsx(CA_Shift_share, file="Shift_share.xlsx", sheetName="CA", append=T)
-write.xlsx(e_change, file="Shift_share.xlsx", sheetName="Change", append=T)
+write.xlsx(US_Shift_share, file=paste(outputloc,"Shift_share.xlsx",sep="/"), sheetName="US", append=F)
+write.xlsx(CA_Shift_share, file=paste(outputloc,"Shift_share.xlsx",sep="/"), sheetName="CA", append=T)
+write.xlsx(e_change, file=paste(outputloc,"Shift_share.xlsx",sep="/"), sheetName="Change", append=T)
 
 
 
@@ -202,7 +205,7 @@ colnames(graph_data)[(2+3*num_j):(4+3*num_j)] <- c("US_tot","State_tot","Local_t
 
 # Identifying n largest local industries:
 
-# manual entry
+# manual input option:
 #graph_codes <- c("11", "62", "72")
 #ind_names   <- c("Agriculture","Health Care & Social Assistance", "Accommodation & Food Services")
 
