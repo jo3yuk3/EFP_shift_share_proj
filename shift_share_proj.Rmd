@@ -1,9 +1,20 @@
-# File:    shift_share_proj.r
-# Author:  Joe Yuke
-# Purpose: shift share analysis
-# Outputs: Shift_share.xlsx, Local_graph_ind.jpg, US_bar.jpg, State_bar.jpg, Local_bar.jpg
+---
+title: "Shift Share"
+author: "Joe Yuke"
+date: "12/31/2020"
+output: html_document
+---
+
+<!-- comment -->
+
+|     Shift-Share analysis is a technique used by urban planners, regional analysts, and economic developers to identify the sources of regional economic growth. Assuming job growth in Santa Barbara County can be explained by three components: National Share, Industry Mix, and Regional Shift, we can compare different sectors of the economy and identify competitive industries as the ones that outperform their counterpart at the state/national level. This information can then be used to inform public investment decisions and economic development policy.
 
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.width= 8, fig.path='Output/', echo = TRUE)
+```
+
+```{r, include=FALSE}
 # 6 input vars:
 #                                     "b" for base year
 # local jobs in industry i @ t-1:     local_i_b
@@ -18,22 +29,6 @@
 # national share:   local_i_b*(US/US_b)
 # Industry mix:     (local_i_b*US_i/US_i_b) - NS
 # Regional shift:   local_i_b*(local_i/local_i_b - US_i/US_i_b)
-
-
-# example calculation
-{
-  local_i_b <- 99593
-  local_i   <- 99346
-  US_b      <- 121044320
-  US        <- 129877063
-  US_i_b    <- 1687808
-  US_i      <- 1688864
-  
-  NS        <- local_i_b*(US/US_b)
-  IM        <- (local_i_b*US_i/US_i_b) - NS
-  RS        <- local_i_b*(local_i/local_i_b - US_i/US_i_b)
-  SS        <- NS + IM + RS
-}
 
 
 # ------------------------- #
@@ -77,11 +72,14 @@ County  <- "Santa Barbara"
 # industries of interest: NAICS code
 code_list <- c("11", "23", "31-33", "42", "44-45", "48-49", "51", "52", "53",
                "54", "55", "56", "62", "71", "72")
-ind_names <- c("Agriculture", "Construction", "Manufacturing", "Wholesale Trade",
-               "Retail Trade", "Transportation & Warehousing", "Information",
-               "Finance & Insurance", "Real Estate", "Prof. & Technical Services",
-               "Management", "Admin & Waste Services", "Health Care & \nSocial Assistance",
-               "Arts, Entertainment, & Recreation", "Accommodation & \nFood Services")
+ind_names <- c("Agriculture", "Construction", "Manufacturing", 
+               "Wholesale Trade", "Retail Trade", 
+               "Transportation & Warehousing", "Information",
+               "Finance & Insurance", "Real Estate", 
+               "Prof. & Technical Services", "Management", 
+               "Admin & Waste Services", "Health Care & \nSocial Assistance",
+               "Arts, Entertainment, & Recreation", 
+               "Accommodation & \nFood Services")
 num_i     <- length(code_list)
 
 
@@ -188,9 +186,6 @@ local_chng <- round((local - local_b)/local_b, digits = 3)*100
 `Total Private Employment` <- c("",local_b,local,local_chng,
                                 CA_b,CA,CA_chng,
                                 US_b,US,US_chng)
-#c("",local_b/1000,local/1000,local_chng,
-#  CA_b/1000,CA/1000,CA_chng,
-#  US_b/1000,US/1000,US_chng)
 
 # NOT FOR GRAPHING
 e_change1 <- rbind(e_change,`Total Private Employment`)
@@ -200,7 +195,6 @@ e_change1 <- rbind(e_change,`Total Private Employment`)
 write.xlsx(US_Shift_share, file=paste(outputloc,"Shift_share.xlsx",sep="/"), sheetName="US", append=F)
 write.xlsx(CA_Shift_share, file=paste(outputloc,"Shift_share.xlsx",sep="/"), sheetName="CA", append=T)
 write.xlsx(e_change1, file=paste(outputloc,"Shift_share.xlsx",sep="/"), sheetName="Change", append=T)
-
 
 
 #--------------#
@@ -309,15 +303,43 @@ efp_theme <- theme( text = element_text(family = "serif"),
                     legend.position = 'bottom',
                     panel.background = element_rect(fill = 'white'))
 
+```
+|
+|     In 2019, Santa Barbara County added 4,249 jobs, achieving a 2.5% increase across all industries. This is a significant change from the prior year’s growth of 2,715 jobs. Notably, employment success was driven by the Professional, Scientific & Technical Services sector which grew by 633 jobs; the Health Care & Social Assistance sector’s gain of 647 jobs; and Agriculture’s increase of 1,227 jobs.
+|
+|     At the state and national levels, there were also increases in the total number of jobs but at less pronounced rates. California added 251,568 jobs in 2019, representing a 1.7% increase from the previous year, and the US added 1,806,905 jobs, growing by 1.5%.
+|
+<!-- [employment change] -->
+## Employment by Industry Sector
+```{r, include=FALSE}
+library(knitr)
+library(kableExtra)
 
-# ----- County line graph ----- #
-
-Local_graph_ind <- ggplot(graph_data) +
+`-`            <- c("", rep(c("2018","2019","%Change"),3))
+e_change1       <- rbind(`-`, e_change1)
+e_change_table <- data.frame(e_change1) %>% 
+  select(-`Industry.NAICS.`)
+```
+```{r, echo=FALSE}
+kable(e_change_table, col.names = c("","SB","",
+                                    "","CA","",
+                                    "","US",""),
+      escape = F, caption = "2018 - 2019") %>%
+  kable_styling(latex_options = "hold_position")
+```
+|
+|     Agriculture, Health Care, and the Accommodation & Food sector have consistently been Santa Barbara County’s largest industries in terms of employment. Over the past 10 years, all three have experienced fairly steady growth as well. However, to assess industry performance, we should look beyond the raw employment numbers.
+|
+|
+<!-- [County linegraph] -->
+```{r Local_graph_ind, echo=FALSE}
+ggplot(graph_data) +
   geom_line(size = 1.2, aes(x = Year, y = graph_data[,4], color = "first")) +
   geom_line(size = 1.2, aes(x = Year, y = graph_data[,7], color = "second")) +
   geom_line(size = 1.2, aes(x = Year, y = graph_data[,10], color = "third")) +
   scale_x_date(labels = date_format("%Y"),
-               breaks = seq.Date(from = min(graph_data$Year), to = max(graph_data$Year), by = "2 years")) +
+               breaks = seq.Date(from = min(graph_data$Year), 
+                                 to = max(graph_data$Year), by = "2 years")) +
   scale_y_continuous(labels = scales::comma_format()) +
   ggtitle(sprintf("%s County Employment",County),"Private Sector") +
   labs(caption = "Source: Quarterly Census of Employment and Wages (QCEW)") +
@@ -330,57 +352,95 @@ Local_graph_ind <- ggplot(graph_data) +
                                 'third'  = EFPcolors[2])) +
   efp_theme +
   theme(panel.grid.major.y = element_line(color="gray"))
+```
 
-# ----- US bar graph ----- #
+|     Shift-Share analysis can explain how much of the job growth within an industry should be attributed to local conditions. As an example, Retail Trade, the county’s fourth largest industry, added a mere 2 jobs in 2019. In fact, this small increase is a competitive performance compared to the national and state retail industries. The “National Share” calculation yields 18,816 which represents the number of jobs that would exist in the local retail industry had it grown at the same rate as the whole US economy. In other words, how much job growth should have been expected according to the national business cycle. “Industry Mix” assumes changes in employment consistent with the growth of the national retail industry. The US-SB analysis identifies a negative Industry Mix of -490. This is because the Retail Trade sector performed poorly at the national level, declining by 1.2% in 2019. Finally, the “Regional Shift” identifies leading industries by finding the differential between the local and national rates of growth and using it as a multiplier for the previous year’s job numbers. The Retail Trade sector for Santa Barbara County achieved a regional shift of 223 jobs, which represents 1.2% of local retail jobs. Industries that have positive Regional Shift scores are deemed competitive according to Shift-Share analysis. Adding all three calculations together yields the true employment numbers for the industry of interest in 2019. For this report, we also run the analysis substituting California’s employment numbers for the US’s statistics. Interestingly, Santa Barbara’s Retail industry performed even stronger relative to the state of California.
+|
+|     The Professional, Scientific, and Technical Services industry, which encompasses lawyers, engineers, researchers etc., achieved a relatively high Regional Shift of 331, or 2.8% of employment in that industry. This sector has been increasing slightly since 2016 but has largely remained consistent for the past 10 years.
 
-US_bar <- ggplot() +
-  geom_col(data = subset(graph_data_bar, location == "US" & industry == "tot"),
-           aes(x = Year, y = employment, fill = "Total Employment"), width=300) +
-  geom_col(data = subset(graph_data_bar, location == "US" & industry != "tot"),
+<!-- [Shift share table] -->
+## Shift Share by Industry Sector
+```{r, include=FALSE}
+`-` <- c("","National Share", "Industry Mix", "Regional Share")
+US_Shift_share <- rbind(`-`,US_Shift_share)
+US_ss_table <- data.frame(US_Shift_share) %>% 
+  select(-`Industry.NAICS.`)
+
+`-` <- c("","State Share", "Industry Mix", "Regional Share")
+CA_Shift_share <- rbind(`-`,CA_Shift_share)
+CA_ss_table <- data.frame(CA_Shift_share) %>% 
+  select(-`Industry.NAICS.`)
+
+ss_table <- cbind(US_ss_table,CA_ss_table)
+```
+```{r, echo=FALSE}
+kable(ss_table, col.names = c("","US-SB","","","CA-SB",""),
+      escape = F, caption = "Santa Barbara: 2018 - 2019") %>%
+  kable_styling(latex_options = "hold_position")
+```
+|	
+|     Out of the County’s top three industries, Agriculture was the only one to realize a positive Regional Shift across both US and CA calculations. In the US-SB calculation, the Regional Shift was 1,236, or 5.1% of agricultural employment, making it the most competitive industry for Santa Barbara in 2019. Statewide and nationally, Agriculture represents a much smaller portion of the labor force and is typically outpaced in terms of growth when compared to Santa Barbara county. Health Care saw a modest increase of 647 jobs, but relative to the changes in California's Health Care employment, this does not represent significant growth. Finally, the Accommodation and Food Services industry added only 222 jobs and underperformed compared to the national and particularly the state level. This is indicated in the much more negative Regional Shift for the CA-SB analysis.
+|
+|
+<!-- [Local_bar] [State_bar] [US_bar] -->
+```{r Local_bar, echo=FALSE}
+ggplot() +
+  geom_col(data = subset(graph_data_bar, location=="Local" & industry=="tot"),
+           aes(x = Year, y = employment, fill = "Total Employment"),
+           width=300) +
+  geom_col(data = subset(graph_data_bar, location=="Local" & industry!="tot"),
+           aes(x = Year, y = employment, fill = industry), width=300) +
+  scale_y_continuous(labels = scales::comma_format()) +
+  ggtitle(sprintf("%s County Private Employment",County),
+          "Industry Portion of Total Employment") +
+  labs(caption = "Source: Quarterly Census of Employment and Wages (QCEW)") +
+  ylab("Annual Employment") +
+  scale_fill_manual(labels = c(graph_names[1], graph_names[2], 
+                               graph_names[3], 'Total \nEmployment'),
+                    values = c(EFPcolors[3], EFPcolors[1], 
+                               EFPcolors[2], EFPcolors[4])) +
+  efp_theme
+```
+
+```{r State_bar, echo=FALSE}
+ggplot() +
+  geom_col(data = subset(graph_data_bar, location=="State" & industry=="tot"),
+           aes(x = Year, y = employment, fill = "Total Employment"),
+           width=300) +
+  geom_col(data = subset(graph_data_bar, location=="State" & industry!="tot"),
+           aes(x = Year, y = employment, fill = industry), width=300) +
+  scale_y_continuous(labels = scales::comma_format()) +
+  ggtitle("California Private Employment",
+          "Industry Portion of Total Employment") +
+  labs(caption = "Source: Quarterly Census of Employment and Wages (QCEW)") +
+  ylab("Annual Employment") +
+  scale_fill_manual(labels = c(graph_names[1], graph_names[2], 
+                               graph_names[3], 'Total \nEmployment'),
+                    values = c(EFPcolors[3], EFPcolors[1], 
+                               EFPcolors[2], EFPcolors[4])) +
+  efp_theme
+```
+
+```{r US_bar, echo=FALSE}
+ggplot() +
+  geom_col(data = subset(graph_data_bar, location=="US" & industry=="tot"),
+           aes(x = Year, y = employment, fill = "Total Employment"),
+           width=300) +
+  geom_col(data = subset(graph_data_bar, location=="US" & industry!="tot"),
            aes(x = Year, y = employment, fill = industry), width=300) +
   scale_y_continuous(labels = scales::comma_format()) +
   ggtitle("US Private Employment","Industry Portion of Total Employment") +
   labs(caption = "Source: Quarterly Census of Employment and Wages (QCEW)") +
   ylab("Annual Employment") +
-  scale_fill_manual(labels = c(graph_names[1], graph_names[2], graph_names[3], 'Total \nEmployment'),
-                    values = c(EFPcolors[3], EFPcolors[1], EFPcolors[2], EFPcolors[4])) +
+  scale_fill_manual(labels = c(graph_names[1], graph_names[2], 
+                               graph_names[3], 'Total \nEmployment'),
+                    values = c(EFPcolors[3], EFPcolors[1], 
+                               EFPcolors[2], EFPcolors[4])) +
   efp_theme
-
-# ----- State Bar Graph ----- #
-
-State_bar <- ggplot() +
-  geom_col(data = subset(graph_data_bar, location == "State" & industry == "tot"),
-           aes(x = Year, y = employment, fill = "Total Employment"), width=300) +
-  geom_col(data = subset(graph_data_bar, location == "State" & industry != "tot"),
-           aes(x = Year, y = employment, fill = industry), width=300) +
-  scale_y_continuous(labels = scales::comma_format()) +
-  ggtitle("California Private Employment","Industry Portion of Total Employment") +
-  labs(caption = "Source: Quarterly Census of Employment and Wages (QCEW)") +
-  ylab("Annual Employment") +
-  scale_fill_manual(labels = c(graph_names[1], graph_names[2], graph_names[3], 'Total \nEmployment'),
-                    values = c(EFPcolors[3], EFPcolors[1], EFPcolors[2], EFPcolors[4])) +
-  efp_theme
+```
 
 
-
-# ----- Local Bar Graph ----- #
-
-Local_bar <- ggplot() +
-  geom_col(data = subset(graph_data_bar, location == "Local" & industry == "tot"),
-           aes(x = Year, y = employment, fill = "Total Employment"), width=300) +
-  geom_col(data = subset(graph_data_bar, location == "Local" & industry != "tot"),
-           aes(x = Year, y = employment, fill = industry), width=300) +
-  scale_y_continuous(labels = scales::comma_format()) +
-  ggtitle(sprintf("%s County Private Employment",County),"Industry Portion of Total Employment") +
-  labs(caption = "Source: Quarterly Census of Employment and Wages (QCEW)") +
-  ylab("Annual Employment") +
-  scale_fill_manual(labels = c(graph_names[1], graph_names[2], graph_names[3], 'Total \nEmployment'),
-                    values = c(EFPcolors[3], EFPcolors[1], EFPcolors[2], EFPcolors[4])) +
-  efp_theme
-
-
-# Saving:
-ggsave("Local_graph_ind.jpg", Local_graph_ind, height = 4, width = 6, path = outputloc)
-ggsave("US_bar.jpg", US_bar, height = 4, width = 6, path = outputloc)
-ggsave("State_bar.jpg", State_bar, height = 4, width = 6, path = outputloc)
-ggsave("Local_bar.jpg", Local_bar, height = 4, width = 6, path = outputloc)
+<!-- Text <http://rmarkdown.rstudio.com>.
+**Bold** 
+`example code`
+-->
