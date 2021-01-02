@@ -31,6 +31,5 @@ Note: Private Sector Jobs
 	
 **All downloads should include only private ownership, all establishment sizes, and all employees.
 
-run "shift_share_proj.R". Creates "Shift_share.xlsx". 
-	Use that to plug into the two LaTeX documents (manual entry for now, automate this later). 
-	Also creates graphs.
+run "shift_share_proj.R". Creates "Shift_share.xlsx" and graphs. 
+Alternatively run "shift_share_proj.Rmd" to automatically complete report (Text needs to be changed manually for now).
